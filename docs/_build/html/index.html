@@ -43,6 +43,115 @@
 <ul class="simple">
 </ul>
 </div>
+<p># Mock</p>
+<p>Mock is not a built-in library in python 2.7. It is included in 3.3 by default. It allows you to test the some of the functions or classes without actually running the real ones. This can come handy when actually calling the &#8216;real&#8217; functions will cause side-effects.</p>
+<p>For example, you don&#8217;t want your disk tray to jump out every time you test its behavior. Or, you definitely don&#8217;t want to post something to Facebook when you are testing Facebook sharing. By mocking those parts, i.e., by substituting those functions with some fake functions that you cook up to simulate the behaviors. You could be sure that your code are working without causing any trouble.</p>
+<p>## Mock and MagicMock
+Mock and MagicMock objects create all attributes and methods as you access them and store details of how they have been used.</p>
+<p>### side_effect
+When you pass an iterable to side_effect, you should expect the mock to yield a value for you whenever you call it.
+<code class="docutils literal"><span class="pre">`</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">mock</span> <span class="pre">=</span> <span class="pre">Mock()</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">mock.side_effect</span> <span class="pre">=</span> <span class="pre">[3,</span> <span class="pre">2,</span> <span class="pre">1]</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">mock(),</span> <span class="pre">mock(),</span> <span class="pre">mock()</span>
+<span class="pre">(3,</span> <span class="pre">2,</span> <span class="pre">1)</span>
+<span class="pre">`</span></code></p>
+<p>also, <cite>side_effect</cite> is called with the same arguments as the mock.
+<code class="docutils literal"><span class="pre">`</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">def</span> <span class="pre">side_effect(value):</span>
+<span class="pre">...</span>&nbsp;&nbsp;&nbsp;&nbsp; <span class="pre">return</span> <span class="pre">value</span> <span class="pre">+</span> <span class="pre">1</span>
+<span class="pre">...</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">m</span> <span class="pre">=</span> <span class="pre">MagicMock(side_effect=side_effect)</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">m(1)</span>
+<span class="pre">2</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">m(2)</span>
+<span class="pre">3</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">m.mock_calls</span>
+<span class="pre">[call(1),</span> <span class="pre">call(2)]</span>
+<span class="pre">`</span></code></p>
+<p>## patch()
+First thing first, patch will return a mock object. Depending on the passed arguments, the return object can either be a simple Mock object or a MagicMock object.
+The patch decorator makes it easy to mock classes or objects in a module under test.</p>
+<p>### How to properly use patch
+If <cite>patch</cite> is used as a decorator and <strong>new</strong> is omitted, the created mock is passed in as an extra aurgument to the decorated function.</p>
+<p>Suppose now we have a module called <strong>mymodule</strong> that can remove file:
+<a href="#id1"><span class="problematic" id="id2">``</span></a>`
+#!/usr/bin/env python
+# -<em>- coding: utf-8 -</em>-</p>
+<p>import os</p>
+<dl class="docutils">
+<dt>def rm(filename):</dt>
+<dd>os.remove(filename)</dd>
+</dl>
+<p><a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
+<p>Now we would like to test it using mock:
+<a href="#id7"><span class="problematic" id="id8">``</span></a>`
+#!/usr/bin/env python
+# -<em>- coding: utf-8 -</em>-</p>
+<p>from mymodule import rm</p>
+<p>import mock
+import unittest</p>
+<p>class RmTestCase(unittest.TestCase):</p>
+<blockquote>
+<div><p>&#64;mock.patch(&#8216;mymodule.os&#8217;)
+def test_rm(self, mock_os):</p>
+<blockquote>
+<div>rm(&#8220;any path&#8221;)
+# test that rm called os.remove with the right parameters
+mock_os.remove.assert_called_with(&#8220;any path&#8221;)</div></blockquote>
+</div></blockquote>
+<p><a href="#id9"><span class="problematic" id="id10">``</span></a>`
+Pay attention that we are mocking <cite>mymodule.os</cite> instead of <cite>os</cite>.
+&gt; Mock an item where it is used, not where it came from.
+Why? Because Python will create an <cite>os</cite> module for <cite>mymodule</cite> during runtime in its local scope.</p>
+<p>Another thing to notice is that Mock will create all attributes and methods as you access them and <strong>store details of how they have been used</strong>. What that means is that you can use <cite>assert_called_with</cite> to test whether the function is called with the arguments that you have in your mind.</p>
+<p>### How to mock a function
+This is quite common and can be easily explained with the following code.
+Say we create a module whose name is called <strong>fots</strong>:
+<a href="#id11"><span class="problematic" id="id12">``</span></a>`
+from os import urandom</p>
+<dl class="docutils">
+<dt>def abc_urandom(length):</dt>
+<dd>return &#8216;abc&#8217; + urandom(length)</dd>
+</dl>
+<p><code class="docutils literal"><span class="pre">`</span>
+<span class="pre">Then</span> <span class="pre">we</span> <span class="pre">can</span> <span class="pre">mock</span> <span class="pre">the</span> <span class="pre">urandom</span> <span class="pre">function</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">fots</span> <span class="pre">module</span> <span class="pre">like</span> <span class="pre">this:</span>
+<span class="pre">`</span></code>
+import unittest
+import mock</p>
+<p>from fots import abc_urandom</p>
+<dl class="docutils">
+<dt>class TestRandom(unittest.TestCase):</dt>
+<dd><p class="first">&#64;mock.patch(&#8216;fots.urandom&#8217;, side_effect=simple_urandom)
+def test_abc_urandom(self, abc_urandom_function):</p>
+<blockquote class="last">
+<div>assert abc_urandom(5) == &#8216;abcfffff&#8217;</div></blockquote>
+</dd>
+</dl>
+<p><a href="#id13"><span class="problematic" id="id14">``</span></a><a href="#id15"><span class="problematic" id="id16">`</span></a></p>
+<p>Or if you just want to mock the return value, you could do this:
+<cite>&#64;mock.patch(&#8216;os.urandom&#8217;, return_value=&#8217;pumpkins&#8217;)</cite></p>
+<p>### Sequence matters
+Notice the sequence. The decorated functions are applied from the bottom up.
+<code class="docutils literal"><span class="pre">`</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">from</span> <span class="pre">unittest.mock</span> <span class="pre">import</span> <span class="pre">patch</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">&#64;patch('module.ClassName2')</span>
+<span class="pre">...</span> <span class="pre">&#64;patch('module.ClassName1')</span>
+<span class="pre">...</span> <span class="pre">def</span> <span class="pre">test(MockClass1,</span> <span class="pre">MockClass2):</span>
+<span class="pre">...</span>&nbsp;&nbsp;&nbsp;&nbsp; <span class="pre">module.ClassName1()</span>
+<span class="pre">...</span>&nbsp;&nbsp;&nbsp;&nbsp; <span class="pre">module.ClassName2()</span>
+<span class="pre">...</span>&nbsp;&nbsp;&nbsp;&nbsp; <span class="pre">assert</span> <span class="pre">MockClass1</span> <span class="pre">is</span> <span class="pre">module.ClassName1</span>
+<span class="pre">...</span>&nbsp;&nbsp;&nbsp;&nbsp; <span class="pre">assert</span> <span class="pre">MockClass2</span> <span class="pre">is</span> <span class="pre">module.ClassName2</span>
+<span class="pre">...</span>&nbsp;&nbsp;&nbsp;&nbsp; <span class="pre">assert</span> <span class="pre">MockClass1.called</span>
+<span class="pre">...</span>&nbsp;&nbsp;&nbsp;&nbsp; <span class="pre">assert</span> <span class="pre">MockClass2.called</span>
+<span class="pre">...</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">test()</span>
+<span class="pre">`</span></code></p>
+<p>## The usage</p>
+<p>## Reference
+[Official doc](<a class="reference external" href="https://docs.python.org/3/library/unittest.mock.html">https://docs.python.org/3/library/unittest.mock.html</a>)
+[Mocking in Python: A Guide to Better Unit Tests | Toptal](<a class="reference external" href="http://www.toptal.com/python/an-introduction-to-mocking-in-python">http://www.toptal.com/python/an-introduction-to-mocking-in-python</a>)
+[Mock function](<a class="reference external" href="http://fgimian.github.io/blog/2014/04/10/using-the-python-mock-library-to-fake-regular-functions-during-tests/">http://fgimian.github.io/blog/2014/04/10/using-the-python-mock-library-to-fake-regular-functions-during-tests/</a>)</p>
 </div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
