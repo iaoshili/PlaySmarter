@@ -18,12 +18,27 @@ COUNT_PER_PAGE = 20
 MAX_PAGE_TO_CRAWL = 50
 
 
-class IndexView(generic.ListView):
-    template_name = 'movies/index.html'
-    context_object_name = 'movies'
+# class IndexView(generic.ListView):
+#     template_name = 'movies/index.html'
+#     context_object_name = 'movies'
 
-    def get_queryset(self):
-        return sorted(Movie.objects.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
+#     def get_queryset(self):
+#         return sorted(Movie.objects.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
+
+def index(request):
+    movies = sorted(Movie.objects.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
+    genres = Genre.objects.all()
+    context = {'movies': movies, 'genres': genres}
+    return render(request, 'movies/index.html', context)
+
+def filter(request):
+    if request.method == "GET":
+        genre = Genre.objects.get(pk=int(request.GET['genre']))
+        genres = Genre.objects.all()
+        movie_genre = genre.movie_set.all()
+        movies = sorted(movie_genre.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
+        context = {'movies': movies, 'genres': genres}
+        return render(request, 'movies/index.html', context)
 
 
 def crawl(request):

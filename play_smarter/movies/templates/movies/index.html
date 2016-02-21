@@ -1,18 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script>
-    function myFunction() {
-        var a = 'something'
-    }
-    </script>
+<meta charset="UTF-8">
 </head>
 
 <h1>Welcome to my world!</h1>
 
 
 <body>
-
 
 {% if notification %}<p>{{ notification }}</p>{% endif %}
 
@@ -21,6 +16,18 @@
 <input type="submit" value="Update watched movies" />
 </form>
 
+<hr>
+<h2>Filters</h2>
+<form action="{% url 'movies:filter' %}" method="get">
+    <select name="genre" id="genre">
+        {% for genre in genres %}
+            <option value="{{ genre.id }}">{{ genre.name }}</option>
+        {% endfor %}
+    </select>
+    <input type="submit" value="确定">
+</form>
+
+<hr>
 <form action="{% url 'movies:crawl' %}" method="post">
 {% csrf_token %}
 <input type="submit" value="Crawl" />
