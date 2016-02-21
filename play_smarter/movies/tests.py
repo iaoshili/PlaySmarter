@@ -12,8 +12,11 @@ from .views import (
     _parse_and_save_movie,
     _get_or_create_genre,
     _save_genres,
+    _search_url_composer,
+    _should_continue,
+    _save_movies_to_watched,
+    _update_watched_movie,
 )
-
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -21,6 +24,7 @@ douban_movie_search_response = open(os.path.join(
                                     DATA_DIR,
                                     'douban_movie_search_response.json')).read()
 douban_movie_search_response = json.loads(douban_movie_search_response)
+douban_watched_movies = open(os.path.join(DATA_DIR, 'douban_watched_movies')).read()
 
 
 class MovieModelTests(TestCase):
@@ -53,6 +57,15 @@ class MovieModelTests(TestCase):
         genre_love.save()
         self.assertEqual(1, genre_anime.movie_set.count())
         self.assertEqual(1, genre_love.movie_set.count())
+
+    def test_set_watched_true(self):
+        movie = Movie(douban_id=1)
+        movie.save()
+        self.assertFalse(movie.watched)
+
+        movie.watched = True
+        movie.save()
+        self.assertTrue(movie.watched)
 
 
 class MovieViewTests(TestCase):
@@ -119,7 +132,50 @@ class MovieViewTests(TestCase):
 
         self.assertEqual(1, genre_anime.movie_set.count())
         self.assertEqual(1, genre_love.movie_set.count())
-        # genre_anime = _get_or_create_genre('动画')
-        # genre_love = _get_or_create_genre('爱情')
-        # self.assertEqual(1, genre_anime.movie_set.count())
-        # self.assertEqual(1, genre_love.movie_set.count())
+
+    def test_search_url_composer(self):
+        tag = '动画'
+        start = 20
+
+        url = _search_url_composer(tag=tag, start=start)
+        self.assertEqual('http://api.douban.com/v2/movie/search?tag=动画&start=20', url)
+
+    def test_update_watched_movie(self):
+        movie_not_watched = Movie(douban_id=1)
+        movie_not_watched.save()
+        movie_to_be_watched = Movie(douban_id=55)
+        movie_to_be_watched.save()
+
+        _update_watched_movie(55)
+
+        movie_to_be_watched = Movie.objects.get(pk=55)
+        self.assertTrue(movie_to_be_watched.watched)
+        self.assertFalse(movie_not_watched.watched)
+
+    def test_save_movies_to_watched(self):
+        movie_not_watched = Movie(douban_id=1)
+        movie_not_watched.save()
+        movie_1 = Movie(douban_id=1421721)
+        movie_1.save()
+        movie_2 = Movie(douban_id=10563743)
+        movie_2.save()
+        _save_movies_to_watched(douban_watched_movies)
+
+        movie_1 = Movie.objects.get(pk=1421721)
+        movie_2 = Movie.objects.get(pk=10563743)
+        movie_not_watched = Movie.objects.get(pk=movie_not_watched.douban_id)
+        self.assertTrue(movie_1.watched)
+        self.assertTrue(movie_2.watched)
+        self.assertFalse(movie_not_watched.watched)
+
+    def test_should_continue(self):
+        should_continue = _should_continue(douban_watched_movies)
+
+        self.assertTrue(should_continue)
+
+    def test_should_continue_should_really_stop(self):
+        html_text = 'text_without_feature_word_in_it'
+
+        should_continue = _should_continue(html_text)
+
+        self.assertFalse(should_continue)

@@ -7,4 +7,7 @@ app_name = 'movies'
 urlpatterns = [
     url(r'^$', views.IndexView.as_view(), name='index'),
     url(r'^/crawl/$', views.crawl, name='crawl'),
+    url(r'/update_watched_movies/$',
+        views.update_watched_movies,
+        name='update_watched_movies')
 ]

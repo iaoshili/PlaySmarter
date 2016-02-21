@@ -1,6 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+    function myFunction() {
+        var a = 'something'
+    }
+    </script>
+</head>
+
 <h1>Welcome to my world!</h1>
 
-{% if response %}<p>{{ response }}</p>{% endif %}
+
+<body>
+
+
+{% if notification %}<p>{{ notification }}</p>{% endif %}
+
+<form action="{% url 'movies:update_watched_movies' %}" method="post">
+{% csrf_token %}
+<input type="submit" value="Update watched movies" />
+</form>
+
 <form action="{% url 'movies:crawl' %}" method="post">
 {% csrf_token %}
 <input type="submit" value="Crawl" />
@@ -9,10 +29,19 @@
 {% if movies %}
     <ul>
     {% for movie in movies %}
-        <li><a href="{{ movie.alt }}">{{ movie.title }}</a></li>
+        <li type='1'>
+        <img src="{{ movie.image_medium }}" alt="movie image"/>
+            <a href="{{ movie.alt }}">{{ movie.title }}</a>
+            <h3>评分：{{ movie.rating_average }}</h3>
+            <h3>看过：{{ movie.collect_count }}</h3>
+        </li>
     {% endfor %}
     </ul>
 {% else %}
     <p>No movies match.</p>
 {% endif %}
+</body>
+
+
+</html>
 
