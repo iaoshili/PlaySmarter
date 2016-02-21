@@ -1,0 +1,18 @@
+<h1>Welcome to my world!</h1>
+
+{% if response %}<p>{{ response }}</p>{% endif %}
+<form action="{% url 'movies:crawl' %}" method="post">
+{% csrf_token %}
+<input type="submit" value="Crawl" />
+</form>
+
+{% if movies %}
+    <ul>
+    {% for movie in movies %}
+        <li><a href="{{ movie.alt }}">{{ movie.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No movies match.</p>
+{% endif %}
+

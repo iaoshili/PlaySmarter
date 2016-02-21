@@ -29,8 +29,8 @@ class Movie(models.Model):
     image_small = models.URLField(null=True, blank=True)
     image_medium = models.URLField(null=True, blank=True)
     image_large = models.URLField(null=True, blank=True)
-    country = models.ForeignKey(Country, on_delete=models.CASCADE, null=True, blank=True)  # Detail view
-    genre = models.ForeignKey(Genre, on_delete=models.CASCADE, null=True, blank=True)
+    country = models.ManyToManyField(Country, null=True, blank=True)  # Detail view
+    genre = models.ManyToManyField(Genre, null=True, blank=True)
 
     @property
     def score(self):
