@@ -19,11 +19,11 @@ class Country(models.Model):
         return self.name
 
 
-# class Tag(models.Model):
-#     name = models.CharField(max_length=30)
+class Tag(models.Model):
+    name = models.CharField(max_length=30)
 
-#     def __str__(self):
-#         return self.name
+    def __str__(self):
+        return self.name
 
 
 class Movie(models.Model):
@@ -38,9 +38,14 @@ class Movie(models.Model):
     image_small = models.URLField(null=True, blank=True)
     image_medium = models.URLField(null=True, blank=True)
     image_large = models.URLField(null=True, blank=True)
+
     watched = models.BooleanField(default=False)
+    boring = models.BooleanField(default=False)
+    series = models.BooleanField(default=False)
+
     country = models.ManyToManyField(Country, null=True, blank=True)  # Detail view
     genre = models.ManyToManyField(Genre, null=True, blank=True)
+    tag = models.ManyToManyField(Tag, null=True, blank=True)
 
     @property
     def score(self):

@@ -16,7 +16,8 @@ from .models import Movie, Genre
 
 COUNT_PER_PAGE = 20
 MAX_PAGE_TO_CRAWL = 50
-
+FIND_SERIES = True
+BASE_RATING = 7.6
 
 # class IndexView(generic.ListView):
 #     template_name = 'movies/index.html'
@@ -26,24 +27,67 @@ MAX_PAGE_TO_CRAWL = 50
 #         return sorted(Movie.objects.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
 
 def index(request):
-    movies = sorted(Movie.objects.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
+    movies = sorted(Movie.objects.filter(watched=False,
+                                         boring=False,
+                                         series=FIND_SERIES,
+                                         rating_average__gte=BASE_RATING), key=lambda x: x.score, reverse=True)
     genres = Genre.objects.all()
     context = {'movies': movies, 'genres': genres}
     return render(request, 'movies/index.html', context)
+
 
 def filter(request):
     if request.method == "GET":
         genre = Genre.objects.get(pk=int(request.GET['genre']))
         genres = Genre.objects.all()
         movie_genre = genre.movie_set.all()
-        movies = sorted(movie_genre.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
+        movies = sorted(movie_genre.filter(watched=False,
+                                           boring=False,
+                                           series=FIND_SERIES,
+                                           rating_average__gte=BASE_RATING), key=lambda x: x.score, reverse=True)
         context = {'movies': movies, 'genres': genres}
         return render(request, 'movies/index.html', context)
 
 
+def set_status(request):
+    if request.method == "POST":
+        movie_id = request.POST.get('movie_id')
+        boring = _get_boolean_from_ajax(request.POST.get('boring'))
+        watched = _get_boolean_from_ajax(request.POST.get('watched'))
+        series = _get_boolean_from_ajax(request.POST.get('series'))
+        movie = Movie.objects.get(pk=movie_id)
+        _set_status(movie,
+                    boring=boring,
+                    watched=watched,
+                    series=series)
+    return render(request, 'movies/index.html', {'notification': 'fuck yeah'})
+
+
+def _get_boolean_from_ajax(value):
+    if value == 'true':
+        return True
+    elif value == 'false':
+        return False
+    else:
+        return None
+
+
+def _set_status(movie,
+                boring=None,
+                watched=None,
+                series=None):
+    if boring is not None:
+        movie.boring = boring
+    if watched is not None:
+        movie.watched = watched
+    if series is not None:
+        movie.series = series
+    movie.save()
+
+
 def crawl(request):
     if request.method == "POST":
-        tag = '日本动画'
+        tag = '香港'
         start = 0
         while start <= COUNT_PER_PAGE*MAX_PAGE_TO_CRAWL:
             cartoons_url = _search_url_composer(tag=tag, start=start)

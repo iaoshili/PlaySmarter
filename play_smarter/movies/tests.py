@@ -16,6 +16,7 @@ from .views import (
     _should_continue,
     _save_movies_to_watched,
     _update_watched_movie,
+    _set_status,
 )
 
 
@@ -69,6 +70,9 @@ class MovieModelTests(TestCase):
 
 
 class MovieViewTests(TestCase):
+
+    def setUp(self):
+        self.movie = Movie.objects.create(douban_id=2046)
 
     def test_get_movies_raw(self):
         movies = _get_movies_raw(douban_movie_search_response)
@@ -179,3 +183,11 @@ class MovieViewTests(TestCase):
         should_continue = _should_continue(html_text)
 
         self.assertFalse(should_continue)
+
+    def test_set_status_false(self):
+        boring = False
+
+        _set_status(self.movie, boring=boring)
+
+        movie_updated = Movie.objects.get(pk=self.movie.douban_id)
+        self.assertFalse(movie_updated.boring)
