@@ -5,11 +5,12 @@ from bs4 import BeautifulSoup
 
 from django.http import HttpResponse
 from django.utils import timezone
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponseRedirect, HttpResponse, Http404
+from django.shortcuts import render
 from django.core.urlresolvers import reverse
 from django.views import generic
 from django.template import loader
+
+from functions.set_status import _get_boolean_from_ajax, _set_status
 
 from .models import Movie, Genre
 
@@ -19,12 +20,6 @@ MAX_PAGE_TO_CRAWL = 50
 FIND_SERIES = True
 BASE_RATING = 7.6
 
-# class IndexView(generic.ListView):
-#     template_name = 'movies/index.html'
-#     context_object_name = 'movies'
-
-#     def get_queryset(self):
-#         return sorted(Movie.objects.filter(watched__lte=False), key=lambda x: x.score, reverse=True)
 
 def index(request):
     movies = sorted(Movie.objects.filter(watched=False,
@@ -63,39 +58,17 @@ def set_status(request):
     return render(request, 'movies/index.html', {'notification': 'fuck yeah'})
 
 
-def _get_boolean_from_ajax(value):
-    if value == 'true':
-        return True
-    elif value == 'false':
-        return False
-    else:
-        return None
-
-
-def _set_status(movie,
-                boring=None,
-                watched=None,
-                series=None):
-    if boring is not None:
-        movie.boring = boring
-    if watched is not None:
-        movie.watched = watched
-    if series is not None:
-        movie.series = series
-    movie.save()
-
-
 def crawl(request):
     if request.method == "POST":
         tag = '香港'
         start = 0
         while start <= COUNT_PER_PAGE*MAX_PAGE_TO_CRAWL:
-            cartoons_url = _search_url_composer(tag=tag, start=start)
-            response = requests.get(cartoons_url)
+            movies_url = _search_url_composer(tag=tag, start=start)
+            response = requests.get(movies_url)
             if _no_more_result(response):
                 break
             else:
-                _save_to_database(response)
+                parse_and_save_movies(response)
                 start += COUNT_PER_PAGE
 
     return render(request, 'movies/index.html', {'notification': response.json()})
@@ -133,7 +106,7 @@ def _search_url_composer(tag=None, start=None):
                 start=start)
 
 
-def _save_to_database(response):
+def parse_and_save_movies(response):
     data = response.json()
     movies_raw = _get_movies_raw(data)
     for movie_raw in movies_raw:
